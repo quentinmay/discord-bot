@@ -1,0 +1,1 @@
+This is my first discord bot that I've made usig JavaScript.
