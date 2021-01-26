@@ -21,20 +21,30 @@ client.once('ready', () => {
 });
 
 client.on('message', (message) => {
-	// Check that the message starts with correct prefix or that the author is not the bot
 	if (!message.content.startsWith(prefix) || message.author.bot) return;
 
 	const args = message.content.slice(prefix.length).trim().split(/ +/);
 	const commandName = args.shift().toLowerCase();
 
-	if (!client.commands.has(commandName)) {
-		return message.reply(`Invalid Command: ${commandName}`);
-	}
+	const command =
+		client.commands.get(commandName) ||
+		client.commands.find(
+			(cmd) => cmd.aliases && cmd.aliases.includes(commandName)
+		);
 
-	const command = client.commands.get(commandName);
+	if (!command) return message.reply(`Invalid Command: ${command}`);
+
 	if (command.guildOnly && message.channel.type === 'dm') {
 		return message.reply("I can't execute that command inside DMs!");
 	}
+
+	if (command.permissions) {
+		const authorPerms = message.channel.permissionsFor(message.author);
+		if (!authorPerms || !authorPerms.has(command.permissions)) {
+			return message.reply('You can not do this!');
+		}
+	}
+
 	if (command.args && !args.length) {
 		let reply = `You didn't provide any arguments, ${message.author}`;
 		if (command.usage) {
@@ -46,6 +56,7 @@ client.on('message', (message) => {
 	if (!cooldowns.has(command.name)) {
 		cooldowns.set(command.name, new Discord.Collection());
 	}
+
 	const now = Date.now();
 	const timestamps = cooldowns.get(command.name);
 	const cooldownAmount = (command.cooldown || 3) * 1000;
@@ -63,8 +74,11 @@ client.on('message', (message) => {
 		}
 	}
 
+	timestamps.set(message.author.id, now);
+	setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
+
 	try {
-		command.execute(message, args, commandName);
+		command.execute(message, args);
 	} catch (error) {
 		console.error(error);
 		message.reply('there was an error trying to execute that command!');
