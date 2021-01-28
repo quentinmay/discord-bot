@@ -32,7 +32,7 @@ client.on('message', (message) => {
 			(cmd) => cmd.aliases && cmd.aliases.includes(commandName)
 		);
 
-	if (!command) return message.reply(`Invalid Command: ${command}`);
+	if (!command) return message.reply(`Invalid Command: ${commandName}`);
 
 	if (command.guildOnly && message.channel.type === 'dm') {
 		return message.reply("I can't execute that command inside DMs!");
