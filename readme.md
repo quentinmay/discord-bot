@@ -1,5 +1,11 @@
 This is my first discord bot that I've made usig JavaScript.
 
+REQUIREMENTS:
+Node
+NPM
+FFMPEG
+
+
 setup:
 
 1. run "npm install" in project folder to install modules
