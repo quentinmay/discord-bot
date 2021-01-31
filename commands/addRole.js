@@ -1,6 +1,6 @@
 module.exports = {
 	name: 'addrole',
-	aliases: ['giverole'],
+	aliases: ['giverole', 'role'],
 	description:
 		'Give/Add the mentioned user to the role specified in the command',
 	guildOnly: true,

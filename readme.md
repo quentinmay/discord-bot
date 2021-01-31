@@ -1,11 +1,9 @@
 This is my first discord bot that I've made usig JavaScript.
 
-
 REQUIREMENTS:
 Node
 NPM
 FFMPEG
-
 
 setup:
 
@@ -17,9 +15,10 @@ setup:
 
 Features:
 Give user/s a role
+Check user/s current permissions
 Remove role from a user/s
 Kick a user from the server
-Play a song or Add the song to a Queue
+Play a song through linking the direct url or search for the song and Add the song to a Queue if a song is already playing
 Skip the currently playing song
 Stop the bot from playing music
 List available Commands
