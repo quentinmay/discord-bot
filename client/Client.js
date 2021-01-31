@@ -7,6 +7,7 @@ module.exports = class extends (
 		super({
 			disableEveryone: true,
 			disabledEvents: ['TYPING_START'],
+			restTimeOffset: 0,
 		});
 		this.commands = new Collection();
 		this.queue = new Map();

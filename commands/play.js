@@ -1,13 +1,18 @@
 const ytdl = require('ytdl-core');
+const ytsr = require('ytsr');
 
 module.exports = {
 	name: 'play',
 	aliases: ['playsong', 'startsong'],
 	guildOnly: true,
+	cooldown: 2,
 	async execute(message, args) {
-		if (!args[0]) return message.reply('You need to provide a link');
+		if (!args[0])
+			return message.reply(
+				'You need to include something to search for or a link'
+			);
+		const RegExp = /(?:https?:\/\/)?(?:www\.)?youtu(?:\.be\/|be.com\/\S*(?:watch|embed)(?:(?:(?=\/[^&\s\?]+(?!\S))\/)|(?:\S*v=|v\/)))([^&\s\?]+)/gm;
 		try {
-			const RegExp = /(?:https?:\/\/)?(?:www\.)?youtu(?:\.be\/|be.com\/\S*(?:watch|embed)(?:(?:(?=\/[^&\s\?]+(?!\S))\/)|(?:\S*v=|v\/)))([^&\s\?]+)/gm;
 			const queue = message.client.queue;
 			const serverQueue = message.client.queue.get(message.guild.id);
 
@@ -21,12 +26,26 @@ module.exports = {
 					'I need permissions to join and speak in your voice channel!'
 				);
 			}
-			const songLink = args[0];
-			if (!songLink.match(RegExp)) return message.reply('Invalid Link');
-			const songInfo = await ytdl.getInfo(args[0]);
+			let songLink = args[0];
+			if (!songLink.match(RegExp)) {
+				const query = message.content.split(' ').slice(1).join(' ');
+				message.channel.send(`Searching for ${query}`);
+				try {
+					await ytsr(query, { limit: 1 }).then(
+						(result) => {
+							songLink = result.items[0].url;
+						},
+						(res) => console.log(res)
+					);
+				} catch (error) {
+					console.error(error);
+				}
+			}
+			const songInfo = await ytdl.getInfo(songLink);
 			const song = {
 				title: songInfo.videoDetails.title,
 				url: songInfo.videoDetails.video_url,
+				duration: songInfo.videoDetails.lengthSeconds,
 			};
 			if (!serverQueue) {
 				const queueConstruct = {
@@ -49,6 +68,11 @@ module.exports = {
 					queue.delete(message.guild.id);
 					return message.channel.send('Something went wrong, check console');
 				}
+			} else {
+				serverQueue.songs.push(song);
+				return serverQueue.textChannel
+					.send(`${song.title} added to the queue`)
+					.catch(console.error);
 			}
 		} catch (error) {
 			console.error(error);
