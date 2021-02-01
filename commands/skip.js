@@ -5,13 +5,14 @@ module.exports = {
 	guildOnly: true,
 	usage: 'just type !skip',
 	execute(message) {
-		const serverQueue = message.client.queue.get(message.guild.id);
+		const queue = message.client.queue.get(message.guild.id);
 		if (!message.member.voice.channel)
 			return message.channel.send(
 				'You have to be in a voice channel to stop the music!'
 			);
-		if (!serverQueue)
+		if (!queue)
 			return message.channel.send('There is no song that I could skip!');
-		serverQueue.connection.dispatcher.end();
+		message.channel.send(`Skipping: **${queue.songs[0].title}**`);
+		queue.connection.dispatcher.end();
 	},
 };
