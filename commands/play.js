@@ -28,10 +28,10 @@ module.exports = {
 					'I need permissions to join and speak in your voice channel!'
 				);
 			}
+			const query = message.content.split(' ').slice(1).join(' ');
 
 			let songLink = args[0];
 			if (!songLink.match(RegExp)) {
-				const query = message.content.split(' ').slice(1).join(' ');
 				message.channel.send(`Looking up:  **${query}**`);
 				try {
 					await ytsr(query, { limit: 1 }).then(
@@ -45,18 +45,16 @@ module.exports = {
 				}
 			}
 			// Check if search returns a playlist or a video
-			let songInfo = '';
-			let song = '';
-			let playlistSongs = '';
+			let playlistSongs;
 			if (ytpl.validateID(songLink)) {
 				const limit = 10;
-				songInfo = await ytpl(songLink, { limit });
+				const songInfo = await ytpl(songLink, { limit });
 				message.channel.send(
 					`Adding the first **${limit}** songs of  **${songInfo.title}** the queue`
 				);
 				playlistSongs = songInfo.items;
 			} else {
-				songInfo = await ytdl.getInfo(songLink);
+				const songInfo = await ytdl.getInfo(songLink);
 				song = {
 					title: songInfo.videoDetails.title,
 					url: songInfo.videoDetails.video_url,
@@ -69,7 +67,7 @@ module.exports = {
 				};
 			}
 			if (!serverQueue) {
-				const queueConstruct = {
+				queueConstruct = {
 					textChannel: message.channel,
 					voiceChannel: voiceChannel,
 					connection: null,
@@ -99,7 +97,7 @@ module.exports = {
 				}
 
 				try {
-					let connection = await voiceChannel.join();
+					const connection = await voiceChannel.join();
 					queueConstruct.connection = connection;
 					this.play(message, queueConstruct.songs[0]);
 				} catch (error) {
@@ -161,6 +159,7 @@ module.exports = {
 			.on('error', (error) => console.error(error));
 
 		dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+		// Create the message embed
 		const nowPlaying = new Discord.MessageEmbed()
 			.setTitle(song.title)
 			.setURL(song.url)
@@ -174,7 +173,24 @@ module.exports = {
 			.setImage(song.image.url)
 			.setColor('#e67e22')
 			.setTimestamp();
-
-		serverQueue.textChannel.send(nowPlaying);
+		// If song is a Livestream then change the text a little
+		if (song.duration <= 0) {
+			const receivedEmbed = message.embeds[0];
+			const liveEmbed = new Discord.MessageEmbed(receivedEmbed)
+				.setTitle(song.title)
+				.setURL(song.url)
+				.setAuthor(
+					song.author.name,
+					song.author_thumbnail.url,
+					song.author.channel_url
+				)
+				.setDescription('**LIVE**')
+				.setThumbnail(song.thumbnail.url)
+				.setImage(song.image.url)
+				.setColor('#e67e22')
+				.setTimestamp();
+			return message.channel.send(liveEmbed);
+		}
+		return serverQueue.textChannel.send(nowPlaying);
 	},
 };
