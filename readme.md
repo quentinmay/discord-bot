@@ -1,17 +1,17 @@
 This is my first discord bot that I've made usig JavaScript.
 
 ## REQUIREMENTS:
-Node
-NPM
-FFMPEG
+- Node
+- NPM
+- FFMPEG
 
 ## setup:
 
 1. run "npm install" in project folder to install modules
 2. create a "config.json" file
 -  fill the "config.json" file with a prefix and token
--  Token parameter should contain a referense to your discord bot token ID
--  Prefix Parameter should contain your designated prefix ( here I'm using "!")
+-  Token parameter should contain a reference to your discord bot token ID
+-  Prefix Parameter should contain your designated prefix ( here I'm using "!", but you can choose whatever you want)
 
 ## Features:
   * Give user/s a role
