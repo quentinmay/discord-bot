@@ -174,7 +174,6 @@ module.exports = {
 			.setURL(song.url)
 			.setAuthor(Author.name, AuthorThumbnail.url, Author.channel_url)
 			.addField('Song Length:', song.duration)
-			.setThumbnail(song.thumbnail.url)
 			.setImage(song.image.url)
 			.setColor('#e67e22')
 			.setTimestamp();
@@ -186,7 +185,6 @@ module.exports = {
 				.setURL(song.url)
 				.setAuthor(Author.name, AuthorThumbnail.url, Author.channel_url)
 				.setDescription('**LIVE**')
-				.setThumbnail(song.thumbnail.url)
 				.setImage(song.image.url)
 				.setColor('#e67e22')
 				.setTimestamp();

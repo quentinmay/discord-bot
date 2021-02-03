@@ -31,7 +31,6 @@ module.exports = {
 						author.channel_url
 					);
 				if (song.thumbnail) {
-					reply.setThumbnail(song.thumbnail.url);
 					reply.setImage(song.image.url);
 				}
 
