@@ -8,31 +8,35 @@ module.exports = {
 	aliases: ['playsong', 'startsong'],
 	guildOnly: true,
 	cooldown: 2,
+	limit: 10,
 	async execute(message, args) {
 		if (!args[0])
 			return message.reply(
 				'You need to include something to search for or a link'
 			);
-		const RegExp = /(?:https?:\/\/)?(?:www\.)?youtu(?:\.be\/|be.com\/\S*(?:watch|embed)(?:(?:(?=\/[^&\s\?]+(?!\S))\/)|(?:\S*v=|v\/)))([^&\s\?]+)/gm;
+		const queue = message.client.queue;
+		const guildID = message.guild.id;
+		const serverQueue = message.client.queue.get(guildID);
+		const voiceChannel = message.member.voice.channel;
+		const messageChannel = message.channel;
 		try {
-			const queue = message.client.queue;
-			const serverQueue = message.client.queue.get(message.guild.id);
-
-			const voiceChannel = message.member.voice.channel;
 			if (!voiceChannel) {
 				return message.reply('You need to be in a voice channel to play music!');
 			}
+
 			const permissions = voiceChannel.permissionsFor(message.client.user);
 			if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
 				return message.reply(
 					'I need permissions to join and speak in your voice channel!'
 				);
 			}
-			const query = message.content.split(' ').slice(1).join(' ');
 
+			const query = message.content.split(' ').slice(1).join(' ');
+			const RegExp = /(?:https?:\/\/)?(?:www\.)?youtu(?:\.be\/|be.com\/\S*(?:watch|embed)(?:(?:(?=\/[^&\s\?]+(?!\S))\/)|(?:\S*v=|v\/)))([^&\s\?]+)/gm;
 			let songLink = args[0];
+
 			if (!songLink.match(RegExp)) {
-				message.channel.send(`Looking up:  **${query}**`);
+				messageChannel.send(`Looking up:  **${query}**`);
 				try {
 					await ytsr(query, { limit: 1 }).then(
 						(result) => {
@@ -47,28 +51,29 @@ module.exports = {
 			// Check if search returns a playlist or a video
 			let playlistSongs;
 			if (ytpl.validateID(songLink)) {
-				const limit = 10;
-				const songInfo = await ytpl(songLink, { limit });
-				message.channel.send(
-					`Adding the first **${limit}** songs of  **${songInfo.title}** the queue`
+				const songInfo = await ytpl(songLink, { limit: this.limit });
+				messageChannel.send(
+					`Adding the first **${this.limit}** songs of  **${songInfo.title}** the queue`
 				);
 				playlistSongs = songInfo.items;
 			} else {
 				const songInfo = await ytdl.getInfo(songLink);
+				const songDetails = songInfo.videoDetails;
+				const songThumbNails = songDetails.thumbnails;
 				song = {
-					title: songInfo.videoDetails.title,
-					url: songInfo.videoDetails.video_url,
-					duration: (songInfo.videoDetails.lengthSeconds / 60).toFixed(2),
-					author: songInfo.videoDetails.author,
-					author_thumbnail: songInfo.videoDetails.author.thumbnails.pop(),
-					description: songInfo.videoDetails.description,
-					thumbnail: songInfo.videoDetails.thumbnails.shift(),
-					image: songInfo.videoDetails.thumbnails.pop(),
+					title: songDetails.title,
+					url: songDetails.video_url,
+					duration: (songDetails.lengthSeconds / 60).toFixed(2),
+					author: songDetails.author,
+					author_thumbnail: songDetails.author.thumbnails.pop(),
+					description: songDetails.description,
+					thumbnail: songThumbNails.shift(),
+					image: songThumbNails.pop(),
 				};
 			}
 			if (!serverQueue) {
-				queueConstruct = {
-					textChannel: message.channel,
+				const queueConstruct = {
+					textChannel: messageChannel,
 					voiceChannel: voiceChannel,
 					connection: null,
 					songs: [],
@@ -76,7 +81,7 @@ module.exports = {
 					playing: true,
 				};
 
-				queue.set(message.guild.id, queueConstruct);
+				queue.set(guildID, queueConstruct);
 				if (playlistSongs) {
 					playlistSongs.forEach((playlistSong) => {
 						song = {
@@ -89,7 +94,7 @@ module.exports = {
 							thumbnail: playlistSong.bestThumbnail,
 							image: playlistSong.bestThumbnail,
 						};
-						message.channel.send(`Added **${song.title}**`);
+						messageChannel.send(`Added **${song.title}**`);
 						queueConstruct.songs.push(song);
 					});
 				} else {
@@ -102,10 +107,12 @@ module.exports = {
 					this.play(message, queueConstruct.songs[0]);
 				} catch (error) {
 					console.error(error);
-					queue.delete(message.guild.id);
-					return message.channel.send('Something went wrong, check console');
+					queue.delete(guildID);
+					return messageChannel.send('Something went wrong, check console');
 				}
 			} else {
+				const queueSongs = serverQueue.songs;
+
 				if (playlistSongs) {
 					playlistSongs.forEach((playlistSong) => {
 						song = {
@@ -118,16 +125,16 @@ module.exports = {
 							thumbnail: playlistSong.bestThumbnail,
 							image: playlistSong.bestThumbnail,
 						};
-						message.channel
+						messageChannel
 							.send(`**${song.title}** added to the queue`)
 							.catch(console.error);
-						if (serverQueue.songs.length > 20) {
-							return message.channel.send('Music queue is full!');
+						if (queueSongs.length > 20) {
+							return messageChannel.send('Music queue is full!');
 						}
-						serverQueue.songs.push(song);
+						queueSongs.push(song);
 					});
 				} else {
-					serverQueue.songs.push(song);
+					queueSongs.push(song);
 					return serverQueue.textChannel
 						.send(`**${song.title}** added to the queue`)
 						.catch(console.error);
@@ -135,18 +142,18 @@ module.exports = {
 			}
 		} catch (error) {
 			console.error(error);
-			message.channel.send('Something went wrong, check console');
+			messageChannel.send('Something went wrong, check console');
 		}
 	},
 
 	play(message, song) {
 		const queue = message.client.queue;
-		const guild = message.guild;
-		const serverQueue = queue.get(guild.id);
+		const guild = message.guild.id;
+		const serverQueue = queue.get(guild);
 
 		if (!song) {
 			serverQueue.voiceChannel.leave();
-			queue.delete(guild.id);
+			queue.delete(guild);
 			return;
 		}
 
@@ -160,14 +167,12 @@ module.exports = {
 
 		dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
 		// Create the message embed
+		const Author = song.author;
+		const AuthorThumbnail = song.author_thumbnail;
 		const nowPlaying = new Discord.MessageEmbed()
 			.setTitle(song.title)
 			.setURL(song.url)
-			.setAuthor(
-				song.author.name,
-				song.author_thumbnail.url,
-				song.author.channel_url
-			)
+			.setAuthor(Author.name, AuthorThumbnail.url, Author.channel_url)
 			.addField('Song Length:', song.duration)
 			.setThumbnail(song.thumbnail.url)
 			.setImage(song.image.url)
@@ -179,11 +184,7 @@ module.exports = {
 			const liveEmbed = new Discord.MessageEmbed(receivedEmbed)
 				.setTitle(song.title)
 				.setURL(song.url)
-				.setAuthor(
-					song.author.name,
-					song.author_thumbnail.url,
-					song.author.channel_url
-				)
+				.setAuthor(Author.name, AuthorThumbnail.url, Author.channel_url)
 				.setDescription('**LIVE**')
 				.setThumbnail(song.thumbnail.url)
 				.setImage(song.image.url)

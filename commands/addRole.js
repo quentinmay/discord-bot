@@ -11,15 +11,21 @@ module.exports = {
 			(role) => role.name === args[0]
 		);
 		const selectedUsers = message.mentions.members;
+
 		if (!selectedRole) return message.reply("couldn't find the selected role");
 		if (!selectedUsers.size) return message.reply('You need to include a user');
+
 		selectedUsers.forEach((user) => {
-			if (user.roles.cache.find((r) => r.name === selectedRole.name)) {
-				return message.channel.send(`${user} already has ${selectedRole}`);
+			const messageChannel = message.channel;
+			const userRole = user.roles;
+			
+			if (userRole.cache.find((r) => r.name === selectedRole.name)) {
+				return messageChannel.send(`${user} already has ${selectedRole}`);
 			}
-			message.channel.send(`Giving ${user} ${selectedRole}`);
-			user.roles.add(selectedRole).catch((err) => {
-				message.channel.send(`Failed at adding ${user} to ${selectedRole}`) &&
+
+			messageChannel.send(`Giving ${user} ${selectedRole}`);
+			userRole.add(selectedRole).catch((err) => {
+				messageChannel.send(`Failed at adding ${user} to ${selectedRole}`) &&
 					console.error(err);
 			});
 		});

@@ -3,20 +3,22 @@ module.exports = {
 	aliases: ['icon', 'pfp'],
 	description: 'Link to the user/users avatar',
 	execute(message) {
-		if (!message.mentions.users.size) {
-			return message.channel.send(
+		const mentioned = message.mentions;
+		const channel = message.channel;
+		if (!mentioned.users.size) {
+			return channel.send(
 				`Your avatar: <${message.author.displayAvatarURL({
 					format: 'png',
 					dynamic: true,
 				})}>`
 			);
 		}
-		const avatarList = message.mentions.users.map((user) => {
+		const avatarList = mentioned.users.map((user) => {
 			return `${user.username}'s avatar: <${user.displayAvatarURL({
 				format: 'png',
 				dynamic: true,
 			})}>`;
 		});
-		message.channel.send(avatarList);
+		channel.send(avatarList);
 	},
 };
