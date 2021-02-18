@@ -14,7 +14,7 @@ module.exports = {
     if (!queue) return channel.send('There is no song that I could skip!');
     try {
       channel.send(`Skipping: **${queue.songs[0].title}**`);
-      return queue.connection.dispatcher.end();
+      queue.connection.dispatcher.end();
     } catch (error) {
       console.error(error);
       return channel.send('Something went wrong, check console for error.');
