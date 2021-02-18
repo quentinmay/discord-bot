@@ -12,9 +12,12 @@ module.exports = {
         'You have to be in a voice channel to stop the music!'
       );
     if (!queue) return channel.send('There is no song that I could skip!');
-    channel.send(`Skipping: **${queue.songs[0].title}**`);
-    queue.connection.dispatcher.end();
-
-    return channel.send('There is no queue or song to skip');
+    try {
+      channel.send(`Skipping: **${queue.songs[0].title}**`);
+      return queue.connection.dispatcher.end();
+    } catch (error) {
+      console.error(error);
+      return channel.send('Something went wrong, check console for error.');
+    }
   },
 };
