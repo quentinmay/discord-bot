@@ -9,7 +9,7 @@ module.exports = {
     const channel = message.channel;
     if (!message.member.voice.channel)
       return channel.send(
-        'You have to be in a voice channel to stop the music!'
+        'You have to be in a voice channel to skip the music!'
       );
     if (!queue) return channel.send('There is no song that I could skip!');
     try {
