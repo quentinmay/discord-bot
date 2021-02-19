@@ -12,6 +12,7 @@ This is my first discord bot that I've made usig JavaScript.
 -  fill the "config.json" file with a prefix and token
 -  Token parameter should contain a reference to your discord bot token ID
 -  Prefix Parameter should contain your designated prefix ( here I'm using "!", but you can choose whatever you want)
+3. If windows environment, remember to have the folder containing ffmpeg.exe is set in your PATH user environment
 
 ## Features:
   * Give user/s a role
