@@ -8,7 +8,7 @@ module.exports = {
     aliases: ["playsong", "startsong"],
     guildOnly: true,
     cooldown: 2,
-    limit: 10,
+    limit: 20,
     async execute(message, args) {
         if (!args[0])
             return message.reply(
@@ -55,6 +55,7 @@ module.exports = {
             // Check if search returns a playlist or a video
             let playlistSongs;
             let song;
+
             if (ytpl.validateID(songLink)) {
                 const songInfo = await ytpl(songLink, { limit: this.limit });
                 messageChannel.send(
@@ -80,7 +81,7 @@ module.exports = {
                 const queueConstruct = {
                     textChannel: messageChannel,
                     voiceChannel: voiceChannel,
-                    connection: null,
+                    connection: undefined,
                     songs: [],
                     volume: 5,
                     playing: true,
@@ -110,9 +111,11 @@ module.exports = {
                 }
 
                 try {
-                    const connection = await voiceChannel.join();
-                    queueConstruct.connection = connection;
-                    this.play(message, queueConstruct.songs[0]);
+                    // const connection =
+                    await voiceChannel.join().then((con) => {
+                        queueConstruct.connection = con;
+                        this.play(message, queueConstruct.songs[0]);
+                    });
                 } catch (error) {
                     console.error(error);
                     queue.delete(guildID);
@@ -137,13 +140,14 @@ module.exports = {
                             thumbnail: playlistSong.bestThumbnail,
                             image: playlistSong.bestThumbnail,
                         };
-                        messageChannel
-                            .send(`**${song.title}** added to the queue`)
-                            .catch(console.error);
-                        if (queueSongs.length > 20) {
+                        if (queueSongs.length > this.limit) {
                             return messageChannel.send("Music queue is full!");
+                        } else {
+                            messageChannel
+                                .send(`**${song.title}** added to the queue`)
+                                .catch(console.error);
+                            queueSongs.push(song);
                         }
-                        queueSongs.push(song);
                     });
                 } else {
                     queueSongs.push(song);
@@ -210,7 +214,7 @@ module.exports = {
             return serverQueue.textChannel.send(nowPlaying);
         } catch (error) {
             console.error(error);
-            message.client.queue.delete(message.guild.id);
+            queue.delete(guild);
             await serverQueue.voiceChannel.leave();
             return message.channel
                 .send("Something went wrong, terminating music player")

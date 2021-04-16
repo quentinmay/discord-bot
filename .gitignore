@@ -3,3 +3,6 @@ node_modules
 config.json
 client_secret.json
 .nvmrc
+.gitignore
+TODO.docx
+*.docx
