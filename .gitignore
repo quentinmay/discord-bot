@@ -6,3 +6,4 @@ client_secret.json
 .gitignore
 TODO.docx
 *.docx
+.*

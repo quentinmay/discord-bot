@@ -1,7 +1,7 @@
 This is my first discord bot that I've made usig JavaScript.
 
 ## REQUIREMENTS:
-- Node
+- Node version 12.4.0+
 - NPM
 - FFMPEG
 
