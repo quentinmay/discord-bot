@@ -8,42 +8,26 @@ module.exports = {
     guildOnly: true,
     usage: "just use the command",
     execute(message) {
-        const queue = message.client.queue.get(message.guild.id);
+        const Queue = message.client.queue;
+        const guild = message.guild.id;
+        const musicQueue = Queue.get(guild);
         const messageChannel = message.channel;
-        const songs = queue.songs;
+        const songs = musicQueue.songs;
 
-        if (!queue || !songs) {
+        if (!musicQueue || !songs) {
             return messageChannel.send("No songs in queue");
         } else {
-            songs.forEach((song) => {
-                if (songs.indexOf(song) == 0) {
-                    const author = song.author;
-                    const reply = new Discord.MessageEmbed()
-                        .setTimestamp()
-                        .setColor("#e67e22")
-                        .setTitle(song.title);
+            const reply = new Discord.MessageEmbed()
+                .setTimestamp()
+                .setColor("#e67e22")
+                .setTitle(`Currently Playing: **${songs[0].title}**`);
 
-                    if (song.url) reply.setURL(song.url);
-                    if (song.duration)
-                        reply.addField("Song Length:", song.duration);
-                    if (author)
-                        reply.setAuthor(
-                            author.name,
-                            song.author_thumbnail.url,
-                            author.channel_url
-                        );
-                    if (song.thumbnail) {
-                        reply.setImage(song.image.url);
-                    }
+            for (let i = 1; i < songs.length; i++) {
+                const song = songs[i];
+                reply.addField(`**${song.title}** \nPosition:`, i, true);
+            }
 
-                    messageChannel.send(reply);
-                } else {
-                    const position = songs.indexOf(song);
-                    messageChannel.send(
-                        `**${song.title}** current place in queue: **${position}**`
-                    );
-                }
-            });
+            return messageChannel.send(reply);
         }
     },
 };

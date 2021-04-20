@@ -4,9 +4,10 @@ module.exports = {
     description: "Link to the user/users avatar",
     execute(message) {
         const mentioned = message.mentions;
-        const channel = message.channel;
+        const messageChannel = message.channel;
+
         if (!mentioned.users.size) {
-            return channel.send(
+            return messageChannel.send(
                 `Your avatar: <${message.author.displayAvatarURL({
                     format: "png",
                     dynamic: true,
@@ -19,6 +20,6 @@ module.exports = {
                 dynamic: true,
             })}>`;
         });
-        channel.send(avatarList);
+        messageChannel.send(avatarList);
     },
 };
