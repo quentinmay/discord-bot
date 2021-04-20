@@ -9,19 +9,19 @@ module.exports = {
             // const Queue = message.client.queue.get(message.guild.id);
             const Queue = message.client.queue;
             const guild = message.guild.id;
-            const serverQueue = Queue.get(guild);
+            const musicQueue = Queue.get(guild);
             if (!message.member.voice.channel) {
                 return message.channel.send(
                     "You have to be in a voice channel to stop the music!"
                 );
             } else if (
-                message.member.voice.channel !== serverQueue.voiceChannel
+                message.member.voice.channel !== musicQueue.voiceChannel
             ) {
                 return message.channel.send(
                     "You have to be in the right voice channel to stop the music bot."
                 );
             }
-            serverQueue.voiceChannel.leave();
+            musicQueue.voiceChannel.leave();
             Queue.delete(guild);
             return;
             // Queue.songs = [];

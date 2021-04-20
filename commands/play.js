@@ -2,6 +2,7 @@ const ytdl = require("ytdl-core");
 const ytsr = require("ytsr");
 const ytpl = require("ytpl");
 const Discord = require("discord.js");
+const MusicPlayer = require("../utility/musicPlayer");
 
 module.exports = {
     name: "play",
@@ -16,7 +17,7 @@ module.exports = {
             );
         const queue = message.client.queue;
         const guildID = message.guild.id;
-        const serverQueue = message.client.queue.get(guildID);
+        const serverQueue = queue.get(guildID);
         const voiceChannel = message.member.voice.channel;
         const messageChannel = message.channel;
         try {
@@ -37,53 +38,59 @@ module.exports = {
 
             const query = message.content.split(" ").slice(1).join(" ");
             const RegExp = /(?:https?:\/\/)?(?:www\.)?youtu(?:\.be\/|be.com\/\S*(?:watch|embed)(?:(?:(?=\/[^&\s\?]+(?!\S))\/)|(?:\S*v=|v\/)))([^&\s\?]+)/gm;
+
             let songLink = args[0];
+            let song;
+            let playlistSongs;
 
             if (!songLink.match(RegExp)) {
                 messageChannel.send(`Looking up:  **${query}**`);
                 try {
-                    await ytsr(query, { limit: 1 }).then(
-                        (result) => {
-                            songLink = result.items[0].url;
-                        },
-                        (res) => console.log(res)
-                    );
+                    await ytsr(query, { limit: 1 }).then((result) => {
+                        songLink = result.items[0].url;
+                    });
                 } catch (error) {
                     console.error(error);
+                    queue.delete(guild);
+                    await serverQueue.voiceChannel.leave();
+                    return messageChannel
+                        .send("Something went wrong, terminating music player")
+                        .catch(console.error);
                 }
             }
             // Check if search returns a playlist or a video
-            let playlistSongs;
-            let song;
-
             if (ytpl.validateID(songLink)) {
-                const songInfo = await ytpl(songLink, { limit: this.limit });
-                messageChannel.send(
-                    `Adding the first **${this.limit}** songs of  **${songInfo.title}** the queue`
-                );
-                playlistSongs = songInfo.items;
+                await ytpl(songLink, { limit: this.limit }).then((result) => {
+                    messageChannel.send(
+                        `Adding the first **${this.limit}** songs of  **${result.title}** to the queue`
+                    );
+                    playlistSongs = result.items;
+                });
             } else {
-                const songInfo = await ytdl.getInfo(songLink);
-                const songDetails = songInfo.videoDetails;
-                const songThumbNails = songDetails.thumbnails;
-                song = {
-                    title: songDetails.title,
-                    url: songDetails.video_url,
-                    duration: (songDetails.lengthSeconds / 60).toFixed(2),
-                    author: songDetails.author,
-                    author_thumbnail: songDetails.author.thumbnails.pop(),
-                    description: songDetails.description,
-                    thumbnail: songThumbNails.shift(),
-                    image: songThumbNails.pop(),
-                };
+                await ytdl.getInfo(songLink).then((result) => {
+                    const songDetails = result.videoDetails;
+                    // const songThumbNails = songDetails.thumbnails;
+                    song = {
+                        title: songDetails.title,
+                        url: songDetails.video_url,
+                        duration: (songDetails.lengthSeconds / 60).toFixed(2),
+                        author: songDetails.author,
+                        author_thumbnail: songDetails.author.thumbnails.pop(),
+                        description: songDetails.description,
+                        // thumbnail: songThumbNails.shift(),
+                        image: songDetails.thumbnails.pop(),
+                    };
+                });
             }
+
+            // Setup the Queue
             if (!serverQueue) {
                 const queueConstruct = {
                     textChannel: messageChannel,
                     voiceChannel: voiceChannel,
                     connection: undefined,
                     songs: [],
-                    volume: 5,
+                    volume: 1,
                     playing: true,
                 };
 
@@ -91,7 +98,7 @@ module.exports = {
                 // Put the songs in the queue
                 if (playlistSongs) {
                     playlistSongs.forEach((playlistSong) => {
-                        song = {
+                        const songTemplate = {
                             title: playlistSong.title,
                             url: playlistSong.url,
                             duration: (playlistSong.durationSec / 60).toFixed(
@@ -103,25 +110,25 @@ module.exports = {
                             thumbnail: playlistSong.bestThumbnail,
                             image: playlistSong.bestThumbnail,
                         };
-                        messageChannel.send(`Added **${song.title}**`);
-                        queueConstruct.songs.push(song);
+                        messageChannel.send(`Added **${songTemplate.title}**`);
+                        queueConstruct.songs.push(songTemplate);
                     });
                 } else {
                     queueConstruct.songs.push(song);
                 }
 
                 try {
-                    // const connection =
                     await voiceChannel.join().then((con) => {
                         queueConstruct.connection = con;
-                        this.play(message, queueConstruct.songs[0]);
+                        MusicPlayer.play(message, queueConstruct.songs[0]);
                     });
                 } catch (error) {
                     console.error(error);
-                    queue.delete(guildID);
-                    return messageChannel.send(
-                        "Something went wrong, check console"
-                    );
+                    queue.delete(guild);
+                    await serverQueue.voiceChannel.leave();
+                    return messageChannel
+                        .send("Something went wrong, terminating music player")
+                        .catch(console.error);
                 }
             } else {
                 const queueSongs = serverQueue.songs;
@@ -151,74 +158,81 @@ module.exports = {
                     });
                 } else {
                     queueSongs.push(song);
-                    return serverQueue.textChannel
+                    return messageChannel
                         .send(`**${song.title}** added to the queue`)
                         .catch(console.error);
                 }
             }
         } catch (error) {
             console.error(error);
-            messageChannel.send("Something went wrong, check console");
-        }
-    },
-
-    async play(message, song) {
-        const queue = message.client.queue;
-        const guild = message.guild.id;
-        const serverQueue = queue.get(guild);
-
-        try {
-            if (!song) {
-                serverQueue.voiceChannel.leave();
+            try {
                 queue.delete(guild);
-                return;
-            }
-
-            const dispatcher = serverQueue.connection
-                .play(ytdl(song.url))
-                .on("finish", () => {
-                    serverQueue.songs.shift();
-                    this.play(message, serverQueue.songs[0]);
-                })
-                .on("error", (error) => console.error(error));
-
-            dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-            // Create the message embed
-            const Author = song.author;
-            const AuthorThumbnail = song.author_thumbnail;
-            const nowPlaying = new Discord.MessageEmbed()
-                .setTitle(song.title)
-                .setURL(song.url)
-                .setAuthor(Author.name, AuthorThumbnail.url, Author.channel_url)
-                .addField("Song Length: ", song.duration)
-                .setImage(song.image.url)
-                .setColor("#e67e22")
-                .setTimestamp();
-            // If song is a Livestream then change the text a little
-            if (song.duration <= 0) {
-                const receivedEmbed = message.embeds[0];
-                const liveEmbed = new Discord.MessageEmbed(receivedEmbed)
-                    .setTitle(song.title)
-                    .setURL(song.url)
-                    .setAuthor(
-                        Author.name,
-                        AuthorThumbnail.url,
-                        Author.channel_url
-                    )
-                    .setDescription("**LIVE**")
-                    .setImage(song.image.url)
-                    .setColor("#e67e22")
-                    .setTimestamp();
-                return message.channel.send(liveEmbed);
-            }
-            return serverQueue.textChannel.send(nowPlaying);
-        } catch (error) {
-            console.error(error);
-            queue.delete(guild);
-            await serverQueue.voiceChannel.leave();
-            return message.channel
+                await serverQueue.voiceChannel.leave();
+            } catch (error) {}
+            return messageChannel
                 .send("Something went wrong, terminating music player")
                 .catch(console.error);
         }
     },
+
+    // async play(message, song) {
+    //     const queue = message.client.queue;
+    //     const guild = message.guild.id;
+    //     const serverQueue = queue.get(guild);
+    //     const messageChannel = message.channel;
+
+    //     try {
+    //         if (!song) {
+    //             serverQueue.voiceChannel.leave();
+    //             queue.delete(guild);
+    //             return;
+    //         }
+
+    //         const dispatcher = serverQueue.connection
+    //             .play(ytdl(song.url))
+    //             .on("finish", () => {
+    //                 serverQueue.songs.shift();
+    //                 this.play(message, serverQueue.songs[0]);
+    //             })
+    //             .on("error", (error) => console.error(error));
+
+    //         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+    //         // Create the message embed
+    //         const Author = song.author;
+    //         const AuthorThumbnail = song.author_thumbnail;
+    //         const nowPlaying = new Discord.MessageEmbed()
+    //             .setTitle(song.title)
+    //             .setURL(song.url)
+    //             .setAuthor(Author.name, AuthorThumbnail.url, Author.channel_url)
+    //             .addField("Song Length: ", song.duration)
+    //             .setImage(song.image.url)
+    //             .setColor("#e67e22")
+    //             .setTimestamp();
+    //         // If song is a Livestream then change the text a little
+    //         if (song.duration <= 0) {
+    //             const receivedEmbed = message.embeds[0];
+    //             const liveEmbed = new Discord.MessageEmbed(receivedEmbed)
+    //                 .setTitle(song.title)
+    //                 .setURL(song.url)
+    //                 .setAuthor(
+    //                     Author.name,
+    //                     AuthorThumbnail.url,
+    //                     Author.channel_url
+    //                 )
+    //                 .setDescription("**LIVE**")
+    //                 .setImage(song.image.url)
+    //                 .setColor("#e67e22")
+    //                 .setTimestamp();
+    //             return messageChannel.send(liveEmbed);
+    //         }
+    //         return serverQueue.textChannel.send(nowPlaying);
+    //     } catch (error) {
+    //         console.error(error);
+    //         queue.delete(guild);
+    //         await serverQueue.voiceChannel.leave();
+    //         return messageChannel
+    //             .send("Something went wrong, terminating music player")
+    //             .catch(console.error);
+    //     }
+    // },
 };
