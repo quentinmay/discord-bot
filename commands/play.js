@@ -39,8 +39,7 @@ module.exports = {
             const RegExp = /(?:https?:\/\/)?(?:www\.)?youtu(?:\.be\/|be.com\/\S*(?:watch|embed)(?:(?:(?=\/[^&\s\?]+(?!\S))\/)|(?:\S*v=|v\/)))([^&\s\?]+)/gm;
 
             let songLink = args[0];
-            let song;
-            let playlistSongs;
+            let song, playlistSongs;
 
             if (!songLink.match(RegExp)) {
                 messageChannel.send(`Looking up:  **${query}**`);
@@ -53,22 +52,70 @@ module.exports = {
                     queue.delete(guild);
                     await serverQueue.voiceChannel.leave();
                     return messageChannel
-                        .send("Something went wrong, terminating music player")
+                        .send(
+                            "Something went wrong, terminating music player 55"
+                        )
                         .catch(console.error);
                 }
             }
+
             // Check if search returns a playlist or a video
             if (ytpl.validateID(songLink)) {
-                await ytpl(songLink, { limit: this.limit }).then((result) => {
-                    messageChannel.send(
-                        `Adding the first **${this.limit}** songs of  **${result.title}** to the queue`
+                if (serverQueue) {
+                    const limit = this.limit - serverQueue.songs.length();
+                    await ytpl(songLink, { limit }).then((result) => {
+                        messageChannel.send(
+                            `Adding **${result.estimatedItemCount}** songs of  **${result.title}** to the queue`
+                        );
+                        if (result.estimatedItemCount >= this.limit) {
+                            const amount =
+                                result.estimatedItemCount - this.limit;
+                            messageChannel.send(
+                                `Music Queue will be full after this. Wait for ${amount} to finish playing`
+                            );
+                        }
+                        playlistSongs = result.items;
+                    });
+                } else {
+                    await ytpl(songLink, { limit: this.limit }).then(
+                        (result) => {
+                            messageChannel.send(
+                                `Adding **${result.estimatedItemCount}** songs of  **${result.title}** to the queue`
+                            );
+                            if (result.estimatedItemCount >= this.limit) {
+                                const amount =
+                                    result.estimatedItemCount - this.limit;
+                                messageChannel.send(
+                                    `Music Queue will be full after this. Wait for ${amount} to finish playing`
+                                );
+                            }
+                            playlistSongs = result.items;
+                        }
                     );
+                }
+
+                await ytpl(songLink, { limit: this.limit }).then((result) => {
+                    if (result.estimatedItemCount >= this.limit) {
+                        messageChannel.send(
+                            `Adding the first ${this.limit} of **${result.estimatedItemCount}** songs of  **${result.title}** to the queue`
+                        );
+                    } else {
+                        const amount = this.limit - result.estimatedItemCount;
+                        messageChannel.send(
+                            `Adding the first ${amount} of **${result.estimatedItemCount}** songs of  **${result.title}** to the queue`
+                        );
+                    }
+                    if (result.estimatedItemCount >= this.limit) {
+                        const amount = result.estimatedItemCount - this.limit;
+                        messageChannel.send(
+                            `Music Queue will be full after this. Wait for ${amount} to finish playing`
+                        );
+                    }
                     playlistSongs = result.items;
                 });
             } else {
                 await ytdl.getInfo(songLink).then((result) => {
                     const songDetails = result.videoDetails;
-                    // const songThumbNails = songDetails.thumbnails;
                     song = {
                         title: songDetails.title,
                         url: songDetails.video_url,
@@ -76,8 +123,8 @@ module.exports = {
                         author: songDetails.author,
                         author_thumbnail: songDetails.author.thumbnails.pop(),
                         description: songDetails.description,
-                        // thumbnail: songThumbNails.shift(),
                         image: songDetails.thumbnails.pop(),
+                        isLive: songDetails.isLiveContent,
                     };
                 });
             }
@@ -108,6 +155,7 @@ module.exports = {
                             description: " ",
                             thumbnail: playlistSong.bestThumbnail,
                             image: playlistSong.bestThumbnail,
+                            isLive: playlistSong.isLiveContent,
                         };
                         messageChannel.send(`Added **${songTemplate.title}**`);
                         queueConstruct.songs.push(songTemplate);
@@ -126,7 +174,9 @@ module.exports = {
                     queue.delete(guild);
                     await serverQueue.voiceChannel.leave();
                     return messageChannel
-                        .send("Something went wrong, terminating music player")
+                        .send(
+                            "Something went wrong, terminating music player 131"
+                        )
                         .catch(console.error);
                 }
             } else {
@@ -145,21 +195,26 @@ module.exports = {
                             description: " ",
                             thumbnail: playlistSong.bestThumbnail,
                             image: playlistSong.bestThumbnail,
+                            isLive: playlistSong.isLiveContent,
                         };
                         if (queueSongs.length > this.limit) {
                             return messageChannel.send("Music queue is full!");
                         } else {
-                            messageChannel.send(
+                            queueSongs.push(song);
+                            return messageChannel.send(
                                 `**${song.title}** added to the queue`
                             );
-                            queueSongs.push(song);
                         }
                     });
                 } else {
-                    queueSongs.push(song);
-                    return messageChannel.send(
-                        `**${song.title}** added to the queue`
-                    );
+                    if (queueSongs.length > this.limit) {
+                        return messageChannel.send("Music queue is full!");
+                    } else {
+                        queueSongs.push(song);
+                        return messageChannel.send(
+                            `**${song.title}** added to the queue`
+                        );
+                    }
                 }
             }
         } catch (error) {
@@ -169,7 +224,7 @@ module.exports = {
                 await serverQueue.voiceChannel.leave();
             } catch (error) {}
             return messageChannel
-                .send("Something went wrong, terminating music player")
+                .send("Something went wrong, terminating music player 174")
                 .catch(console.error);
         }
     },

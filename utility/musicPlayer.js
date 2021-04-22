@@ -27,18 +27,11 @@ module.exports = {
             // Create the message embed
             const Author = song.author;
             const AuthorThumbnail = song.author_thumbnail;
-            const nowPlaying = new Discord.MessageEmbed()
-                .setTitle(song.title)
-                .setURL(song.url)
-                .setAuthor(Author.name, AuthorThumbnail.url, Author.channel_url)
-                .addField("Song Length: ", song.duration)
-                .setImage(song.image.url)
-                .setColor("#e67e22")
-                .setTimestamp();
+
             // If song is a Livestream then change the text a little
-            if (song.duration <= 0) {
+            if (song.isLive) {
                 const receivedEmbed = message.embeds[0];
-                const liveEmbed = new Discord.MessageEmbed(receivedEmbed)
+                const nowPlaying = new Discord.MessageEmbed(receivedEmbed)
                     .setTitle(song.title)
                     .setURL(song.url)
                     .setAuthor(
@@ -50,16 +43,37 @@ module.exports = {
                     .setImage(song.image.url)
                     .setColor("#e67e22")
                     .setTimestamp();
-                return messageChannel.send(liveEmbed);
+                return messageChannel.send(nowPlaying);
+            } else {
+                const nowPlaying = new Discord.MessageEmbed()
+                    .setTitle(`**${song.title}**`)
+                    .setURL(song.url)
+                    .setAuthor(
+                        Author.name,
+                        AuthorThumbnail.url,
+                        Author.channel_url
+                    )
+                    .addField("Song Length: ", song.duration)
+                    .setImage(song.image.url)
+                    .setColor("#e67e22")
+                    .setTimestamp();
+                return messageChannel.send(nowPlaying);
             }
-            return serverQueue.textChannel.send(nowPlaying);
         } catch (error) {
             console.error(error);
-            queue.delete(guild);
-            await serverQueue.voiceChannel.leave();
+            try {
+                queue.delete(guild);
+                await serverQueue.voiceChannel.leave();
+            } catch (error) {
+                console.error(error);
+            }
             return messageChannel
-                .send("Something went wrong, terminating music player")
+                .send(
+                    "Something went wrong, terminating music player musicPlayer 65 "
+                )
                 .catch(console.error);
+        } finally {
+            return;
         }
     },
 };

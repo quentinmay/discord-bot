@@ -10,13 +10,14 @@ module.exports = {
             return message.reply(
                 `You need to input a number between 2 and 100`
             );
+        } else {
+            channel.bulkDelete(amount, true).catch((err) => {
+                console.error(err);
+                return channel.send(
+                    "There was an error trying to prune messages in this channel"
+                );
+            });
+            return channel.send(`Deleted the last ${amount} messages`);
         }
-        channel.bulkDelete(amount, true).catch((err) => {
-            console.error(err);
-            channel.send(
-                "There was an error trying to prune messages in this channel"
-            );
-        });
-        channel.send(`Deleted the last ${amount} messages`);
     },
 };

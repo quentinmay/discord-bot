@@ -13,14 +13,32 @@ module.exports = {
         const musicQueue = Queue.get(guild);
         const messageChannel = message.channel;
         const songs = musicQueue.songs;
+        const currentSong = musicQueue.songs[0];
 
         if (!musicQueue || !songs) {
             return messageChannel.send("No songs in queue");
         } else {
+            const Author = currentSong.author;
+            console.log(Author);
+            const author = currentSong.author;
             const reply = new Discord.MessageEmbed()
-                .setTimestamp()
+                .setTitle(`NOW PLAYING: ${currentSong.title}`)
+                .setImage(currentSong.image.url)
                 .setColor("#e67e22")
-                .setTitle(`Currently Playing: **${songs[0].title}**`);
+                .setTimestamp();
+
+            if (currentSong.url) reply.setURL(currentSong.url);
+            if (currentSong.duration)
+                reply.addField("Song Length:", currentSong.duration);
+            if (author)
+                reply.setAuthor(
+                    author.name,
+                    currentSong.author_thumbnail.url,
+                    author.channel_url
+                );
+            if (currentSong.image.url) {
+                reply.setImage(currentSong.image.url);
+            }
 
             for (let i = 1; i < songs.length; i++) {
                 const song = songs[i];

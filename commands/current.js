@@ -6,7 +6,7 @@ module.exports = {
     description: "Check the currently playing song",
     usage: "Just try it",
     guildonly: true,
-    execute(message, args) {
+    execute(message) {
         const Queue = message.client.queue;
         const guild = message.guild.id;
         const messageChannel = message.channel;
@@ -15,25 +15,26 @@ module.exports = {
 
         try {
             const author = currentSong.author;
-            const reply = new Discord.MessageEmbed()
-                .setTimestamp()
+            const nowPlaying = new Discord.MessageEmbed()
+                .setTitle(`NOW PLAYING: ${currentSong.title}`)
+                .setImage(currentSong.image.url)
                 .setColor("#e67e22")
-                .setTitle(currentSong.title);
+                .setTimestamp();
 
-            if (currentSong.url) reply.setURL(currentSong.url);
+            if (currentSong.url) nowPlaying.setURL(currentSong.url);
             if (currentSong.duration)
-                reply.addField("Song Length:", currentSong.duration);
+                nowPlaying.addField("Song Length:", currentSong.duration);
             if (author)
-                reply.setAuthor(
+                nowPlaying.setAuthor(
                     author.name,
                     currentSong.author_thumbnail.url,
                     author.channel_url
                 );
-            if (currentSong.thumbnail) {
-                reply.setImage(currentSong.image.url);
+            if (currentSong.image.url) {
+                nowPlaying.setImage(currentSong.image.url);
             }
 
-            messageChannel.send(reply);
+            return messageChannel.send(nowPlaying);
         } catch (error) {
             if (!musicQueue) {
                 return messageChannel.send(
@@ -44,6 +45,8 @@ module.exports = {
                     `Currently playing: **${musicQueue.songs[0].title}**`
                 );
             }
+        } finally {
+            return;
         }
     },
 };
