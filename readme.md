@@ -1,4 +1,4 @@
-This is my first discord bot that I've made usig JavaScript.
+This is the first discord bot I've made, using NodeJS and discord-js. If you have any suggestions, please come with them.
 
 ## REQUIREMENTS:
 - Node version 12.4.0+
