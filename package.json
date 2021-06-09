@@ -1,26 +1,26 @@
 {
-	"name": "discord-bot",
-	"version": "1.0.0",
-	"description": "My First Discord bot",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/AlfRagnar/discord-bot.git"
-	},
-	"author": "",
-	"license": "ISC",
-	"bugs": {
-		"url": "https://github.com/AlfRagnar/discord-bot/issues"
-	},
-	"homepage": "https://github.com/AlfRagnar/discord-bot#readme",
-	"dependencies": {
-		"@discordjs/opus": "^0.4.0",
-		"discord.js": "^12.5.1",
-		"ytdl-core": "^4.5.0",
-		"ytpl": "^2.0.5",
-		"ytsr": "^3.3.1"
-	}
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "My First Discord bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlfRagnar/discord-bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AlfRagnar/discord-bot/issues"
+  },
+  "homepage": "https://github.com/AlfRagnar/discord-bot#readme",
+  "dependencies": {
+    "@discordjs/opus": "^0.4.0",
+    "discord.js": "^12.5.1",
+    "ytdl-core": "^4.8.2",
+    "ytpl": "^2.0.5",
+    "ytsr": "^3.3.1"
+  }
 }
