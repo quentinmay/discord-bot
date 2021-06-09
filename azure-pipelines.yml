@@ -10,7 +10,7 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: $(dockerregistryconnection)
+  dockerRegistryServiceConnection: '62e90229-b46f-4811-997c-346c7b9edfef'
   imageRepository: 'alfplebbot'
   containerRegistry: 'goussandockerimages.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
